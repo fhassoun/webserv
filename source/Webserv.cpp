@@ -6,7 +6,7 @@
 /*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2023/12/11 11:56:01 by fhassoun         ###   ########.fr       */
+/*   Updated: 2023/12/12 11:08:20 by fhassoun         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -510,11 +510,13 @@ void Webserv::run()
 									
 									if (ft_strcmp(tmp, "./cgi-bin/index.py") == 0 && access("./cgi-bin/index.py", F_OK) == 0)
 									{
-										std::cout << "cgi-bin/index.py exists" << std::endl;
+										// std::cout << "cgi-bin/index.py exists" << std::endl;
 										if (access("./cgi-bin/index.py", X_OK) == 0)
 										{
 											
-											std::cout << "cgi-bin/index.py exists" << std::endl;
+											// std::cout << "cgi-bin/index.py exists" << std::endl;
+											logging("cgi-bin/index.py exists", DEBUG);
+
 											int pipefd[2];
 											pipe(pipefd);
 											if (fork() == 0)
@@ -593,7 +595,7 @@ void Webserv::run()
 									}
 									else if (is_directory)
 									{
-										 std::string tmp2 = "." + http_request.path;
+										std::string tmp2 = "." + http_request.path;
 										http_request.path = autoindex(tmp2);
 										// std::cout << "autoindex http_request.path: " << http_request.path << std::endl;
 									}
@@ -625,17 +627,20 @@ void Webserv::run()
 								std::string requestBody;
 								char buffer[1024];
 								ssize_t bytesRead;
-								while ((bytesRead = read(poll_fd[i].fd, buffer, sizeof(buffer) - 1)) > 0) {
+								while ((bytesRead = read(poll_fd[i].fd, buffer, sizeof(buffer) - 1)) > 0)
+								{
 									buffer[bytesRead] = '\0';
 									requestBody += buffer;
-									if (endsWithCRLF(buffer, bytesRead)) {
+									if (endsWithCRLF(buffer, bytesRead)) 
+									{
 										break;
 									}
+									
 								}
 
 								// Parse the request body as form data
 								std::map<std::string, std::string> formData = parse_form_data(requestBody);
-
+								std::cout << "formData: " << formData["name"] << std::endl;
 								// Create the response body
 								std::ostringstream sstream;
 								sstream << "<html><body><h1>Form data</h1><table>";
