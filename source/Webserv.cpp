@@ -6,7 +6,7 @@
 /*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2023/12/13 12:02:03 by fhassoun         ###   ########.fr       */
+/*   Updated: 2023/12/13 14:49:05 by fhassoun         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,24 +125,6 @@ std::string Webserv::autoindex(const std::string& path)
     return html.str();
 }
 
-std::map<std::string, std::string> Webserv::parse_form_data(const std::string &formData)
-{
-    std::map<std::string, std::string> result;
-    std::istringstream ss(formData);
-    std::string field;
-
-    while (std::getline(ss, field, '&')) {
-        size_t equalPos = field.find('=');
-        if (equalPos != std::string::npos) {
-            std::string name = field.substr(0, equalPos);
-            std::string value = field.substr(equalPos + 1);
-            result[name] = value;
-        }
-    }
-
-    return result;
-}
-
 std::map<std::string, FormData> Webserv::parse_multipart_form_data(const std::string& data) 
 {
     std::map<std::string, FormData> formData;
@@ -203,6 +185,24 @@ std::map<std::string, FormData> Webserv::parse_multipart_form_data(const std::st
     }
 
     return formData;
+}
+
+std::map<std::string, std::string> Webserv::parse_form_data(const std::string &formData)
+{
+    std::map<std::string, std::string> result;
+    std::istringstream ss(formData);
+    std::string field;
+
+    while (std::getline(ss, field, '&')) {
+        size_t equalPos = field.find('=');
+        if (equalPos != std::string::npos) {
+            std::string name = field.substr(0, equalPos);
+            std::string value = field.substr(equalPos + 1);
+            result[name] = value;
+        }
+    }
+
+    return result;
 }
 
 void Webserv::init_servers()
@@ -336,7 +336,25 @@ HttpRequest Webserv::parse_http_request(const std::string &request)
 			std::cout << "boundary found" << std::endl;
 			
 		}
-		
+		if (key == "Content-Disposition")
+		{
+			std::cout << "Content-Disposition found" << std::endl;
+			size_t filenamePos = value.find("filename=\"");
+			std::string filename;
+			while (value.at(filenamePos) ) {
+				std::cout << "filenamePos: " << value.at(filenamePos) << std::endl;
+				filenamePos++;
+			}
+			if (filenamePos != std::string::npos) 
+			{
+				size_t filenameEnd = value.find("\"", filenamePos + 10); // +10 to skip "filename=\""
+				if (filenameEnd != std::string::npos) 
+				{
+					filename = value.substr(filenamePos + 10, filenameEnd - filenamePos - 10);
+				}
+			}
+			http_request.headers["filename"] = filename;
+		}
 		
 
 		
@@ -399,20 +417,29 @@ std::string Webserv::create_http_response(void)
 
 	// http_request.path = "." + http_request.path;
 	//Check if it is a file (static website), if not it's a cgi script
-	// if (access(http_request.path.c_str(), F_OK) != 0)
-	// 	http_response.body = http_request.path ;
-	// else if (http_request.headers["Content-Type"].find("multipart/form-data") != std::string::npos)
-	// {
-	// 	http_response.body = http_request.path;
-	// }
-	// else
-	// {
-	// 	std::ifstream file(http_request.path.c_str());
-	// 	std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-	// 	// std::cout << "str: " << str << std::endl;
-	// 	http_response.body = str;
+	
+	if (access(http_request.path.c_str(), F_OK) != 0)
+	{
+		std::cout << "this" << std::endl;
+		http_response.body = http_request.path ;
+	}
+	else if (http_request.path == "/")
+	{
+		std::cout << "that" << std::endl;
+		// std::ifstream file("./index.html");
+		// std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		// // std::cout << "str: " << str << std::endl;
+		// http_response.body = str;
+	}
+	else
+	{
+		std::cout << "there" << std::endl;
+		std::ifstream file(http_request.path.c_str());
+		std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		// std::cout << "str: " << str << std::endl;
+		http_response.body = str;
 		
-	// }
+	}
 	http_response.headers["Content-Length"] = int_to_string(http_response.body.size());
 
 	// The status line format is: HTTP/VERSION STATUS_CODE STATUS_MESSAGE
@@ -596,12 +623,12 @@ void Webserv::run()
 							
 							// std::cout << "CRLF found" << std::endl;
 							logging(" ---- request: " + int_to_string(in_request[poll_fd[i].fd].size()) + " bytes received  ----", DEBUG);
-							logging("request :\n" + in_request[poll_fd[i].fd] + "\n", DEBUG);
 							http_request = parse_http_request(in_request[poll_fd[i].fd]);
+							logging("request :\n" + in_request[poll_fd[i].fd] + "\n", DEBUG);
 
 							// http_request = parse_http_request(in_request[poll_fd[i].fd]);
 
-						/* 	
+							/* 
 							// just some logging to print all data in the http_request struct
 							std::cout << "method: " << http_request.method << std::endl;
 							std::cout << "path: " << http_request.path << std::endl;
@@ -772,16 +799,17 @@ void Webserv::run()
 									
 									logging("multipart/form-data", DEBUG);
 									// Parse the request body as multipart form data
-									// std::map<std::string, FormData > formData = parse_multipart_form_data(requestBody);
+									 std::map<std::string, FormData > formData = parse_multipart_form_data(requestBody);
 
 									// Save the uploaded file
-									// std::string fileName = formData["filename"];
-									std::string fileName = http_request.headers["file"];
-									std::cout << "filename: " << fileName << std::endl;
-									// std::string fileContent = formData["filecontent"];
-									std::string fileContent = http_request.headers["Content-Type"];
+									
+									std::string fileName = http_request.headers["filename"] ;
+									// std::string fileName = http_request.headers["file"];
+									std::cout << "here filename: " << fileName << std::endl;
+									std::string fileContent = formData["filecontent"].data;
+									// std::string fileContent = http_request.headers["Content-Type"];
 									// std::ofstream outFile("/path/to/save/" + fileName);
-									std::string tmp = "./over42/downloads/" + fileName;
+									std::string tmp = "/over42/downloads/" + fileName;
 									std::ofstream outFile(tmp.c_str());
 									outFile << fileContent;
 									outFile.close();
@@ -815,9 +843,10 @@ void Webserv::run()
 									http_response.body = sstream.str();
 									out_response[poll_fd[i].fd] = create_http_response();
 								}
+
 								// // Parse the request body as form data
 								// std::map<std::string, std::string> formData = parse_form_data(requestBody);
-								
+								// std::cout << "formData: " << formData["name"] << std::endl;
 								// // Create the response body
 								// std::ostringstream sstream;
 								// sstream << "<html><body><h1>Form data</h1><table>";
