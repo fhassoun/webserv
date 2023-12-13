@@ -6,7 +6,7 @@
 /*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2023/12/12 11:42:00 by fhassoun         ###   ########.fr       */
+/*   Updated: 2023/12/13 12:02:03 by fhassoun         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,6 +143,68 @@ std::map<std::string, std::string> Webserv::parse_form_data(const std::string &f
     return result;
 }
 
+std::map<std::string, FormData> Webserv::parse_multipart_form_data(const std::string& data) 
+{
+    std::map<std::string, FormData> formData;
+
+    std::string boundary = data.substr(0, data.find("\r\n"));
+
+    size_t lastPos = data.find(boundary) + boundary.size() + 2; // Skip first boundary and CRLF
+    size_t pos = data.find(boundary, lastPos);
+
+    while (pos != std::string::npos) 
+	{
+        std::string part = data.substr(lastPos, pos - lastPos - 2); // -2 to remove CRLF before boundary
+
+        size_t headerEnd = part.find("\r\n\r\n");
+        if (headerEnd != std::string::npos) {
+            std::string headers = part.substr(0, headerEnd);
+            std::string body = part.substr(headerEnd + 4); // +4 to skip CRLF
+
+            size_t namePos = headers.find("name=\"");
+            if (namePos != std::string::npos) 
+			{
+                size_t nameEnd = headers.find("\"", namePos + 6); // +6 to skip "name=\""
+                if (nameEnd != std::string::npos) 
+				{
+                    std::string name = headers.substr(namePos + 6, nameEnd - namePos - 6);
+
+                    size_t filenamePos = headers.find("filename=\"");
+                    std::string filename;
+                    if (filenamePos != std::string::npos) 
+					{
+                        size_t filenameEnd = headers.find("\"", filenamePos + 10); // +10 to skip "filename=\""
+                        if (filenameEnd != std::string::npos) 
+						{
+                            filename = headers.substr(filenamePos + 10, filenameEnd - filenamePos - 10);
+                        }
+                    }
+
+                    size_t contentTypePos = headers.find("Content-Type: ");
+                    std::string content_type;
+                    if (contentTypePos != std::string::npos) 
+					{
+                        content_type = headers.substr(contentTypePos + 14, headers.find("\r\n", contentTypePos + 14) - contentTypePos - 14);
+                    }
+
+                    
+					FormData formPart;
+					formPart.filename = filename;
+					formPart.content_type = content_type;
+					formPart.data = body;
+					formData[name] = formPart;
+					
+                }
+            }
+        }
+
+        lastPos = pos + boundary.size() + 2; // +2 to skip CRLF after boundary
+        pos = data.find(boundary, lastPos);
+    }
+
+    return formData;
+}
+
 void Webserv::init_servers()
 {
 	// this->s_iter = server.begin();
@@ -203,18 +265,49 @@ void Webserv::init_servers()
 	// poll_fd[2].events = POLLIN;
 }
 
+// HttpRequest Webserv::parse_http_request(const std::string &request)
+// {
+// 	std::istringstream sstream(request);
+// 	HttpRequest http_request;
+
+// 	// The request line format is: METHOD PATH HTTP/VERSION
+// 	sstream >> http_request.method >> http_request.path >> http_request.http_version;
+
+// 	// Parse each header line
+// 	std::string line;
+// 	while (std::getline(sstream, line) && line != "\r\n" && !line.empty())
+// 	{
+// 		std::istringstream ls(line);
+// 		std::string key, value;
+
+// 		// Split the line into key and value
+// 		std::getline(ls, key, ':');
+// 		std::getline(ls, value);
+
+// 		// Remove leading and trailing whitespace from the value
+// 		value.erase(0, value.find_first_not_of(" \t"));
+// 		value.erase(value.find_last_not_of(" \t") + 1);
+
+// 		http_request.headers[key] = value;
+// 	}
+
+// 	return http_request;
+// }
+
 HttpRequest Webserv::parse_http_request(const std::string &request)
 {
 	std::istringstream sstream(request);
 	HttpRequest http_request;
-
+	
 	// The request line format is: METHOD PATH HTTP/VERSION
 	sstream >> http_request.method >> http_request.path >> http_request.http_version;
 
 	// Parse each header line
 	std::string line;
-	while (std::getline(sstream, line) && line != "\r\n" && !line.empty())
+	while (std::getline(sstream, line) && !line.empty())
 	{
+		// if (line == "\r\n" && line.empty())
+		// 	continue;
 		std::istringstream ls(line);
 		std::string key, value;
 
@@ -222,11 +315,39 @@ HttpRequest Webserv::parse_http_request(const std::string &request)
 		std::getline(ls, key, ':');
 		std::getline(ls, value);
 
+		// if value contains "multipart/form-data" then we need to handle it differently
+		if (key == "Content-Type" && value.find("multipart/form-data") != std::string::npos)
+		{
+			//split the value into boundary and boundary value
+			std::istringstream ls2(value);
+			std::string key2, value2;
+			std::getline(ls2, key2, '=');
+			std::getline(ls2, value2);
+			// delete multipart/form-data; from key2
+			key2.erase(0, 22);
+			std::cout << "key2: " << key2 << std::endl;
+			std::cout << "value2: " << value2 << std::endl;
+			http_request.headers[key2] = value2;
+			
+		}
+		std::string boundary = "--" + http_request.headers["boundary"];
+		if (key == http_request.headers[boundary])
+		{
+			std::cout << "boundary found" << std::endl;
+			
+		}
+		
+		
+
+		
 		// Remove leading and trailing whitespace from the value
 		value.erase(0, value.find_first_not_of(" \t"));
 		value.erase(value.find_last_not_of(" \t") + 1);
-
-		http_request.headers[key] = value;
+		if (key == "Content-Type" && !http_request.headers["Content-Type"].empty())
+			http_request.headers[key] = value;
+		else
+			http_request.headers[key] = value;
+		
 	}
 
 	return http_request;
@@ -278,16 +399,20 @@ std::string Webserv::create_http_response(void)
 
 	// http_request.path = "." + http_request.path;
 	//Check if it is a file (static website), if not it's a cgi script
-	if (access(http_request.path.c_str(), F_OK) != 0)
-		http_response.body = http_request.path ;
-	else
-	{
-		std::ifstream file(http_request.path.c_str());
-		std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-		// std::cout << "str: " << str << std::endl;
-		http_response.body = str;
+	// if (access(http_request.path.c_str(), F_OK) != 0)
+	// 	http_response.body = http_request.path ;
+	// else if (http_request.headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+	// {
+	// 	http_response.body = http_request.path;
+	// }
+	// else
+	// {
+	// 	std::ifstream file(http_request.path.c_str());
+	// 	std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	// 	// std::cout << "str: " << str << std::endl;
+	// 	http_response.body = str;
 		
-	}
+	// }
 	http_response.headers["Content-Length"] = int_to_string(http_response.body.size());
 
 	// The status line format is: HTTP/VERSION STATUS_CODE STATUS_MESSAGE
@@ -471,12 +596,12 @@ void Webserv::run()
 							
 							// std::cout << "CRLF found" << std::endl;
 							logging(" ---- request: " + int_to_string(in_request[poll_fd[i].fd].size()) + " bytes received  ----", DEBUG);
-							http_request = parse_http_request(in_request[poll_fd[i].fd]);
 							logging("request :\n" + in_request[poll_fd[i].fd] + "\n", DEBUG);
+							http_request = parse_http_request(in_request[poll_fd[i].fd]);
 
 							// http_request = parse_http_request(in_request[poll_fd[i].fd]);
 
-							/* 
+						/* 	
 							// just some logging to print all data in the http_request struct
 							std::cout << "method: " << http_request.method << std::endl;
 							std::cout << "path: " << http_request.path << std::endl;
@@ -625,37 +750,89 @@ void Webserv::run()
 
 								// Read the request body
 								std::string requestBody;
-								char buffer[1024];
-								ssize_t bytesRead;
-								while ((bytesRead = read(poll_fd[i].fd, buffer, sizeof(buffer) - 1)) > 0)
-								{
-									buffer[bytesRead] = '\0';
-									requestBody += buffer;
-									if (endsWithCRLF(buffer, bytesRead)) 
-									{
-										break;
-									}
+								// char buffer[1024];
+								// ssize_t bytesRead;
+								// while ((bytesRead = read(poll_fd[i].fd, buffer, sizeof(buffer) - 1)) > 0)
+								// {
+								// 	buffer[bytesRead] = '\0';
+								// 	requestBody += buffer;
+								// 	if (endsWithCRLF(buffer, bytesRead)) 
+								// 	{
+								// 		break;
+								// 	}
 									
-								}
+								// }
 
-								// Parse the request body as form data
-								std::map<std::string, std::string> formData = parse_form_data(requestBody);
-								std::cout << "formData: " << formData["name"] << std::endl;
-								// Create the response body
-								std::ostringstream sstream;
-								sstream << "<html><body><h1>Form data</h1><table>";
-								for (std::map<std::string, std::string>::const_iterator it = formData.begin(); it != formData.end(); ++it) {
-									sstream << "<tr><td>" << it->first << "</td><td>" << it->second << "</td></tr>";
-								}
-								sstream << "</table></body></html>";
+								requestBody = in_request[poll_fd[i].fd];
+								std::cout << "content type is: " << http_request.headers["Content-Type"] << std::endl;
+								//check if content type contains multipart/form-data
+								// if (http_request.headers["Content-Type"] == "multipart/form-data")
+								if (http_request.headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+								{
+									
+									logging("multipart/form-data", DEBUG);
+									// Parse the request body as multipart form data
+									// std::map<std::string, FormData > formData = parse_multipart_form_data(requestBody);
+
+									// Save the uploaded file
+									// std::string fileName = formData["filename"];
+									std::string fileName = http_request.headers["file"];
+									std::cout << "filename: " << fileName << std::endl;
+									// std::string fileContent = formData["filecontent"];
+									std::string fileContent = http_request.headers["Content-Type"];
+									// std::ofstream outFile("/path/to/save/" + fileName);
+									std::string tmp = "./over42/downloads/" + fileName;
+									std::ofstream outFile(tmp.c_str());
+									outFile << fileContent;
+									outFile.close();
+
+									// Create the response body
+									std::ostringstream sstream;
+									sstream << "<html><body><h1>File uploaded successfully</h1></body></html>";
+
+									http_response.status_code = 200;
+									http_response.status_message = "OK";
+									http_response.headers["Content-Type"] = "text/html";
+									http_response.headers["Content-Length"] = int_to_string(sstream.str().size());
+									http_response.body = sstream.str();
+									out_response[poll_fd[i].fd] = create_http_response();
 								
-								http_response.status_code = 200;
-								http_response.status_message = "OK";
-								http_response.headers["Content-Type"] = "text/html";
-								http_response.headers["Content-Length"] = int_to_string(sstream.str().size());
-								http_response.body = sstream.str();
-								out_response[poll_fd[i].fd] = create_http_response();
-								// std::cout << "POST request" << std::endl;
+								}
+								else
+								{
+									// std::cout << "not multipart/form-data" << std::endl;
+									logging("not multipart/form-data", DEBUG);
+									// Create the response body
+									std::ostringstream sstream;
+									sstream << "<html><body><h1>Form data</h1><table>";
+									// sstream << "<tr><td>" << requestBody << "</td></tr>";
+									sstream << "</table></body></html>";
+									
+									http_response.status_code = 200;
+									http_response.status_message = "OK";
+									http_response.headers["Content-Type"] = "text/html";
+									http_response.headers["Content-Length"] = int_to_string(sstream.str().size());
+									http_response.body = sstream.str();
+									out_response[poll_fd[i].fd] = create_http_response();
+								}
+								// // Parse the request body as form data
+								// std::map<std::string, std::string> formData = parse_form_data(requestBody);
+								
+								// // Create the response body
+								// std::ostringstream sstream;
+								// sstream << "<html><body><h1>Form data</h1><table>";
+								// for (std::map<std::string, std::string>::const_iterator it = formData.begin(); it != formData.end(); ++it) {
+								// 	sstream << "<tr><td>" << it->first << "</td><td>" << it->second << "</td></tr>";
+								// }
+								// sstream << "</table></body></html>";
+								
+								// http_response.status_code = 200;
+								// http_response.status_message = "OK";
+								// http_response.headers["Content-Type"] = "text/html";
+								// http_response.headers["Content-Length"] = int_to_string(sstream.str().size());
+								// http_response.body = sstream.str();
+								// out_response[poll_fd[i].fd] = create_http_response();
+								// // std::cout << "POST request" << std::endl;
 								
 							}
 							else if (http_request.method == "DELETE")

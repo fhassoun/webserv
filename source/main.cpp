@@ -6,7 +6,7 @@
 /*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/09 13:47:45 by fhassoun          #+#    #+#             */
-/*   Updated: 2023/11/23 12:14:14 by fhassoun         ###   ########.fr       */
+/*   Updated: 2023/12/13 07:59:55 by fhassoun         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ int main(int argc, char **argv, char **env)
 	}
 	else if (argc > 2)
 	{
-		std::cout << "Error : too many arguments." << std::endl;
+		webserv.logging("Error : too many arguments.", INFO);
+		// std::cout << "Error : too many arguments." << std::endl;
 		return (0);
 	}
 	else

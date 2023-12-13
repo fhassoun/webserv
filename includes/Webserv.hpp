@@ -6,7 +6,7 @@
 /*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:10:32 by fhassoun          #+#    #+#             */
-/*   Updated: 2023/12/11 12:00:47 by fhassoun         ###   ########.fr       */
+/*   Updated: 2023/12/13 08:22:16 by fhassoun         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,6 +91,12 @@ struct HttpResponse {
     std::string body;
 };
 
+struct FormData {
+    std::string filename;
+    std::string content_type;
+    std::string data;
+};
+
 class Webserv
 {
 	private:
@@ -150,6 +156,7 @@ class Webserv
 		
 		//methods
 		std::map<std::string, std::string> parse_form_data(const std::string& formData);
+		std::map<std::string, FormData> parse_multipart_form_data(const std::string& data);
 		void parseConfig(char *path);
 		void init_servers();
 		void run();
