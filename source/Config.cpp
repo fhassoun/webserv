@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/13 11:44:28 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/11 07:54:16 by fhassoun         ###   ########.fr       */
+/*   Updated: 2024/01/12 17:12:20 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
-Config::Config()	: listen(""), root(""), autoindex(false), port(0), client_body_buffer_size(0){
+Config::Config()	: listen(""), root(""), autoindex(0), port(0), client_body_buffer_size(0) {
 }
 
 Config::~Config()	{
@@ -21,7 +21,7 @@ Config::~Config()	{
 	}
 }
 
-Config::Config(Config const &src)	: listen(src.listen), root(src.root), autoindex(src.autoindex), port(src.port), client_body_buffer_size(src.client_body_buffer_size){
+Config::Config(Config const &src)	: listen(src.listen), root(src.root), autoindex(src.autoindex), port(src.port), client_body_buffer_size(src.client_body_buffer_size) {
 	*this = src;
 }
 
@@ -90,17 +90,18 @@ int Config::parse(std::ifstream& configFile) {
 					return 0;
 //---------------------------                    
 				} else if (line.find("listen") != std::string::npos) {
-					keyword = "listen";
+					// keyword = "listen";
 					iss.clear();
 					iss.str(line);
 					iss >> keyword >> tmp;
+					formatString(tmp);
 					setListen(tmp);
                     //get only the port of this
-					setPort(tmp);
+					// setPort(tmp);
 				}
 				// Parse other server-related configuration here
 				else if (line.find("server_name") != std::string::npos) {
-					keyword = "server_name";
+					// keyword = "server_name";
 					iss.clear();
 					iss.str(line);
 					iss >> keyword;
@@ -109,7 +110,7 @@ int Config::parse(std::ifstream& configFile) {
 						setServerNames(tmp);
 					}
 				} else if (line.find("host") != std::string::npos) {
-					keyword = "host";
+					// keyword = "host";
 					iss.clear();
 					iss.str(line);
 					iss >> keyword >> tmp;
@@ -195,6 +196,20 @@ int Config::parse(std::ifstream& configFile) {
 
 void Config::setListen(std::string str) {
 	listen = str;
+	// std::cout << "str start in setListen: " << str << std::endl;
+	std::istringstream iss(str);
+	std::string hostPort;
+	iss >> hostPort;
+
+	std::size_t colonPos = hostPort.find(':');
+	if (colonPos == std::string::npos) {
+		// std::cout << "in setListen: " << hostPort << std::endl;
+		port = static_cast<int>(std::strtol(hostPort.c_str(), NULL, 10));
+	} else {
+		// std::cout << "in setListen else: " << hostPort.substr(0, colonPos) << std::endl;
+		host.push_back(hostPort.substr(0, colonPos));
+		port = static_cast<int>(std::strtol(hostPort.substr(colonPos + 1).c_str(), NULL, 10));
+	}
 }
 
 const std::string& Config::getListen()  const {
@@ -226,7 +241,7 @@ void Config::setPort(std::string str) {
 	port = _port;
 }
 
-int Config::getPorts() const {
+int Config::getPort() const {
 	return (this->port);
 }
 
@@ -335,6 +350,13 @@ void Config::setLocation(std::string str, std::ifstream& configFile) {
 				cgiExtVector.push_back(tmp);
 			}
 			loc->setCGIExt(cgiExtVector);
+		} else if (line.find("client_max_body_size") != std::string::npos) {
+				keyword = "client_max_body_size";
+				iss.clear();
+				iss.str(line);
+				iss >> keyword >> tmp;
+				formatString(tmp);
+				loc->setClientBodyBufferSize(tmp);
 		}
 	}
 }
@@ -415,6 +437,7 @@ void Config::printConfigs(std::vector<Config *>& serverConfigs) {
     std::cout << "Hosts: ";
     displayVector(hosts);
     std::cout << std::endl;
+		std::cout << "Port: ." << (*itz)->getPort() << "." << std::endl;
 
     std::cout << "Root: ." << (*itz)->getRoot() << "." << std::endl;
 		std::cout << "Index: .";
@@ -452,6 +475,7 @@ void Config::printConfigs(std::vector<Config *>& serverConfigs) {
 			for (std::vector<std::string>::const_iterator extIt = cgiExt.begin(); extIt != cgiExt.end(); ++extIt) {
 				std::cout << "\t\t." << *extIt << "." << std::endl;
 			}
+			std::cout << "\tClient Body Buffer Size: ." << it->second->getClientBodyBufferSize() << "." << std::endl;
 		}
 	}
 }

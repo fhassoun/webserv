@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/07 17:41:51 by sung-hle          #+#    #+#             */
-/*   Updated: 2023/12/19 15:35:41 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/12 15:59:44 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ class Location	{
 		// std::map<std::string, std::string>  cgi_path;
 		std::vector<std::string>          cgi_path;
 		std::vector<std::string>            cgi_ext;
-		// unsigned long                       client_body_buffer_size;
+		unsigned long                       client_body_buffer_size;
 		bool                                autoindex;//
 		std::string													index;//
 	
@@ -63,8 +63,8 @@ class Location	{
     void setCGIExt(const std::vector<std::string>& newCGIExt);
 
     // Getter and Setter for 'client_body_buffer_size'
-    // unsigned long getClientBodyBufferSize() const;
-    // void setClientBodyBufferSize(const std::string& newSize);
+    unsigned long getClientBodyBufferSize() const;
+    void setClientBodyBufferSize(std::string newSize);
 
     // Getter and Setter for 'autoindex'
     bool getAutoindex() const;

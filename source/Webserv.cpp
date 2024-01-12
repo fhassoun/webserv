@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Webserv.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fhassoun <fhassoun@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/11 07:42:35 by fhassoun         ###   ########.fr       */
+/*   Updated: 2024/01/12 17:12:12 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,8 +124,8 @@ void Webserv::init_servers()
 	std::vector<Config *> serverConfigs = this->getConfig();
 	for (std::vector<Config *>::iterator itz = serverConfigs.begin(); itz != serverConfigs.end(); ++itz)
 	{
-		ports.push_back((*itz)->getPorts());
-		std::cout << "port: " << (*itz)->getPorts() << std::endl;
+		ports.push_back((*itz)->getPort());
+		std::cout << "port: " << (*itz)->getPort() << std::endl;
 	}
 	// ports.push_back(DEF_PORT);
 	std::cout << "Number of server configurations: " << serverConfigs.size() << std::endl;
@@ -437,7 +437,7 @@ int Webserv::parseConfig(std::string path) {
 	}
 	setConfig(serverConfigs);
 	configFile.close();
-	if (serverConfigs[0]->getListen() == "" ||
+	if (serverConfigs[0]->getPort() == 0 ||
 		serverConfigs[0]->getHost().empty() ||
 		serverConfigs[0]->getLocation().find("/") == serverConfigs[0]->getLocation().end()) {
 		std::cout << "Invalid configuration." << std::endl;
@@ -445,6 +445,7 @@ int Webserv::parseConfig(std::string path) {
 		for (std::vector<Config *>::iterator itz = serverConfigs.begin(); itz != serverConfigs.end(); ++itz) {
 				delete *itz;
 		}
+		std::cout << "test\n";
 		return 2;
 	} 
 	return 0;
