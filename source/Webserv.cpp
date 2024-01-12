@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 17:12:12 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/12 18:20:27 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -437,6 +437,7 @@ int Webserv::parseConfig(std::string path) {
 	}
 	setConfig(serverConfigs);
 	configFile.close();
+	//min requirements port, host, root-location
 	if (serverConfigs[0]->getPort() == 0 ||
 		serverConfigs[0]->getHost().empty() ||
 		serverConfigs[0]->getLocation().find("/") == serverConfigs[0]->getLocation().end()) {
@@ -445,7 +446,7 @@ int Webserv::parseConfig(std::string path) {
 		for (std::vector<Config *>::iterator itz = serverConfigs.begin(); itz != serverConfigs.end(); ++itz) {
 				delete *itz;
 		}
-		std::cout << "test\n";
+		// std::cout << "test\n";
 		return 2;
 	} 
 	return 0;

@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/13 11:44:28 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 17:12:20 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/12 18:47:23 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,28 +59,20 @@ Config &Config::operator=(Config const &src)
 
 
 int Config::parse(std::ifstream& configFile) {
-	std::string line;
-	std::string tmp;
-	std::string tmp2;
-	// std::cout << "Parsing config file..." << std::endl;
+	std::string line, tmp, tmp2, keyword;
 	while (std::getline(configFile, line)) {
 		std::istringstream iss(line);
-		std::string keyword;
 		iss >> std::ws >> keyword;
 
 		if (keyword == "server") {
-			// Start parsing the server block
 			size_t openingBracePos = line.find("{");
 			if (openingBracePos != std::string::npos) {
-				// Opening curly bracket found on the same line
-				line.erase(0, openingBracePos + 1);  // Erase everything before {
+				line.erase(0, openingBracePos + 1);
 			} else {
-				// Look for the opening curly bracket in the following lines
 				while (std::getline(configFile, line)) {
 						size_t openingBracePos = line.find("{");
 						if (openingBracePos != std::string::npos) {
-								// Opening curly bracket found on this line
-								line.erase(0, openingBracePos + 1);  // Erase everything before {
+								line.erase(0, openingBracePos + 1);
 								break;
 						}
 				}
@@ -90,18 +82,10 @@ int Config::parse(std::ifstream& configFile) {
 					return 0;
 //---------------------------                    
 				} else if (line.find("listen") != std::string::npos) {
-					// keyword = "listen";
-					iss.clear();
-					iss.str(line);
-					iss >> keyword >> tmp;
-					formatString(tmp);
+					formatKeyTmp(line, tmp);
 					setListen(tmp);
-                    //get only the port of this
-					// setPort(tmp);
 				}
-				// Parse other server-related configuration here
 				else if (line.find("server_name") != std::string::npos) {
-					// keyword = "server_name";
 					iss.clear();
 					iss.str(line);
 					iss >> keyword;
@@ -110,22 +94,17 @@ int Config::parse(std::ifstream& configFile) {
 						setServerNames(tmp);
 					}
 				} else if (line.find("host") != std::string::npos) {
-					// keyword = "host";
 					iss.clear();
 					iss.str(line);
-					iss >> keyword >> tmp;
-					// std::cout << "TMP HOST: " << tmp << std::endl;
-					formatString(tmp);
-					host.push_back(tmp);
+					iss >> keyword;
+					while (iss >> tmp) {
+						formatString(tmp);
+						setHost(tmp);
+					}
 				} else if (line.find("root") != std::string::npos) {
-					keyword = "root";
-					iss.clear();
-					iss.str(line);
-					iss >> keyword >> tmp;
-					formatString(tmp);
+					formatKeyTmp(line, tmp);
 					setRoot(tmp);
 				} else if (line.find("error_page") != std::string::npos) {
-					keyword = "error_page";
 					iss.clear();
 					iss.str(line);
 					std::string tmp2;
@@ -133,11 +112,7 @@ int Config::parse(std::ifstream& configFile) {
 					formatString(tmp2);
 					setErrorPage(tmp, tmp2);
 				} else if (line.find("client_max_body_size") != std::string::npos) {
-					keyword = "client_max_body_size";
-					iss.clear();
-					iss.str(line);
-					iss >> keyword >> tmp;
-					formatString(tmp);
+					formatKeyTmp(line, tmp);
 					setClientBodyBufferSize(tmp);
 				} else if (line.find("location") != std::string::npos) {
 					std::istringstream iss(line);
@@ -149,7 +124,7 @@ int Config::parse(std::ifstream& configFile) {
 							std::istringstream issTmp(tmp);
 							issTmp >> std::ws;
 							std::getline(issTmp, tmp2, ' ');
-							line.erase(0, openingBracePos + 1);  // Erase everything before {
+							line.erase(0, openingBracePos + 1);
 						} else {
 							while (std::getline(configFile, line)) {
 								size_t openingBracePos = line.find("{");
@@ -158,7 +133,7 @@ int Config::parse(std::ifstream& configFile) {
 									std::istringstream issTmp(tmp);
 									issTmp >> std::ws;
 									std::getline(issTmp, tmp2, ' ');
-									line.erase(0, openingBracePos + 1);  // Erase everything before {
+									line.erase(0, openingBracePos + 1);
 									break;
 								}
 							}
@@ -166,17 +141,9 @@ int Config::parse(std::ifstream& configFile) {
 					}
 					setLocation(tmp2, configFile);
 				} else if (line.find("autoindex") != std::string::npos) {
-					keyword = "autoindex";
-					iss.clear();
-					iss.str(line);
-					iss >> keyword >> tmp;
-					formatString(tmp);
-					if (tmp.compare("on") == 0)
-						this->autoindex = true;
-					else
-						this->autoindex = false;
+					formatKeyTmp(line, tmp);
+					setAutoindex(tmp.compare("on") == 0 ? true : false);
 				} else if (line.find("index") != std::string::npos) {
-					keyword = "index";
 					iss.clear();
 					iss.str(line);
 					iss >> keyword;
@@ -196,17 +163,15 @@ int Config::parse(std::ifstream& configFile) {
 
 void Config::setListen(std::string str) {
 	listen = str;
-	// std::cout << "str start in setListen: " << str << std::endl;
+	// std::cout << "." << str << "." << std::endl;
 	std::istringstream iss(str);
 	std::string hostPort;
 	iss >> hostPort;
 
 	std::size_t colonPos = hostPort.find(':');
 	if (colonPos == std::string::npos) {
-		// std::cout << "in setListen: " << hostPort << std::endl;
 		port = static_cast<int>(std::strtol(hostPort.c_str(), NULL, 10));
 	} else {
-		// std::cout << "in setListen else: " << hostPort.substr(0, colonPos) << std::endl;
 		host.push_back(hostPort.substr(0, colonPos));
 		port = static_cast<int>(std::strtol(hostPort.substr(colonPos + 1).c_str(), NULL, 10));
 	}
@@ -277,6 +242,8 @@ unsigned long Config::getClientBodyBufferSize() const {
 	return (this->client_body_buffer_size);
 }
 
+// const std::vector<std::string>& getLocationPath() const;
+
 void Config::setLocation(std::string str, std::ifstream& configFile) {
 	std::string line;
 	std::string tmp;
@@ -291,8 +258,6 @@ void Config::setLocation(std::string str, std::ifstream& configFile) {
 		loc->setPath(str);
 
 		if (line.find("}") != std::string::npos) {
-			// Closing curly bracket found, end parsing server block
-			// std::cout << "END OF LOCATION" << std::endl;
 			location.insert(std::make_pair(str, loc));
 			break;
 		} else if ((pos = line.find("allow_methods")) != std::string::npos) {
@@ -303,30 +268,15 @@ void Config::setLocation(std::string str, std::ifstream& configFile) {
 				formatString(method);
 				methods.insert(method);
 			}
-			// for (std::set<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
-			// 		std::cout << *it << " ";
-			// }
 			std::cout << std::endl;
 			loc->setAllowedMethods(methods);
 		} else if (line.find("root") != std::string::npos) {
-			keyword = "root";
-			iss.clear();
-			iss.str(line);
-			iss >> keyword >> tmp;
-			formatString(tmp);
+			formatKeyTmp(line, tmp);
 			loc->setRoot(tmp);
 		} else if (line.find("autoindex") != std::string::npos) {
-			keyword = "autoindex";
-			iss.clear();
-			iss.str(line);
-			iss >> keyword >> tmp;
-			formatString(tmp); 	
-			if (tmp.compare("on") == 0)
-				loc->setAutoindex(true);
-			else
-				loc->setAutoindex(false);
+			formatKeyTmp(line, tmp);
+			loc->setAutoindex(tmp.compare("on") == 0 ? true : false);
 		} else if (line.find("index") != std::string::npos) {
-			keyword = "index";
 			iss.clear();
 			iss.str(line);
 			iss >> keyword;
@@ -351,11 +301,7 @@ void Config::setLocation(std::string str, std::ifstream& configFile) {
 			}
 			loc->setCGIExt(cgiExtVector);
 		} else if (line.find("client_max_body_size") != std::string::npos) {
-				keyword = "client_max_body_size";
-				iss.clear();
-				iss.str(line);
-				iss >> keyword >> tmp;
-				formatString(tmp);
+				formatKeyTmp(line, tmp);
 				loc->setClientBodyBufferSize(tmp);
 		}
 	}
@@ -485,4 +431,13 @@ void Config::formatString(std::string& str) {
 		if (str[str.size() - 1] == ';')
 			str.erase(str.size() - 1);
 	}
+}
+
+void Config::formatKeyTmp(std::string& str, std::string& str2) {
+	std::istringstream iss;
+	std::string keyword;
+	iss.clear();
+	iss.str(str);
+	iss >> keyword >> str2;
+	formatString(str2);
 }

@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/13 11:37:48 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 17:11:59 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/12 18:42:35 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ class Config
 		
 
 		void formatString(std::string& str);
+		void formatKeyTmp(std::string& str, std::string& str2);
 
 	public:
 		Config();

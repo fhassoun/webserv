@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/09 13:47:45 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 17:14:47 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/12 18:16:47 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,12 +64,12 @@ int main(int argc, char **argv, char **env)
 		std::cout << "Number of server configurations: " << serverConfigs.size() << std::endl;
 		Config::printConfigs(serverConfigs);
 
+		// webserv.init_servers();
+		// webserv.run();
 		for (std::vector<Config *>::iterator itz = serverConfigs.begin(); itz != serverConfigs.end(); ++itz)
 		{
 			delete *itz;
   	}
-		webserv.init_servers();
-		webserv.run();
 		// std::vector<Config>::iterator iter = server._config.begin();
 		
 		// webserv.init_servers();
