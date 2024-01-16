@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/13 11:44:28 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 18:47:23 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/16 17:36:46 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,18 +65,7 @@ int Config::parse(std::ifstream& configFile) {
 		iss >> std::ws >> keyword;
 
 		if (keyword == "server") {
-			size_t openingBracePos = line.find("{");
-			if (openingBracePos != std::string::npos) {
-				line.erase(0, openingBracePos + 1);
-			} else {
-				while (std::getline(configFile, line)) {
-						size_t openingBracePos = line.find("{");
-						if (openingBracePos != std::string::npos) {
-								line.erase(0, openingBracePos + 1);
-								break;
-						}
-				}
-			}
+			formatValueTmp(configFile, line, tmp2);
 			while (std::getline(configFile, line)) {
 				if (line.find("}") != std::string::npos) {
 					return 0;
@@ -118,26 +107,7 @@ int Config::parse(std::ifstream& configFile) {
 					std::istringstream iss(line);
 					iss >> keyword;
 					if (keyword == "location") {
-						size_t openingBracePos = line.find("{");
-						if (openingBracePos != std::string::npos) {
-							tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
-							std::istringstream issTmp(tmp);
-							issTmp >> std::ws;
-							std::getline(issTmp, tmp2, ' ');
-							line.erase(0, openingBracePos + 1);
-						} else {
-							while (std::getline(configFile, line)) {
-								size_t openingBracePos = line.find("{");
-								if (openingBracePos != std::string::npos) {
-									tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
-									std::istringstream issTmp(tmp);
-									issTmp >> std::ws;
-									std::getline(issTmp, tmp2, ' ');
-									line.erase(0, openingBracePos + 1);
-									break;
-								}
-							}
-						}
+						formatValueTmp(configFile, line, tmp2);
 					}
 					setLocation(tmp2, configFile);
 				} else if (line.find("autoindex") != std::string::npos) {
@@ -153,7 +123,6 @@ int Config::parse(std::ifstream& configFile) {
 					}
 				}
 			}
-			// End of server block
 		} else
 			return 1;
 	}
@@ -163,7 +132,6 @@ int Config::parse(std::ifstream& configFile) {
 
 void Config::setListen(std::string str) {
 	listen = str;
-	// std::cout << "." << str << "." << std::endl;
 	std::istringstream iss(str);
 	std::string hostPort;
 	iss >> hostPort;
@@ -441,3 +409,27 @@ void Config::formatKeyTmp(std::string& str, std::string& str2) {
 	iss >> keyword >> str2;
 	formatString(str2);
 }
+
+void Config::formatValueTmp(std::ifstream& configFile, std::string& line, std::string& tmp2) {
+			std::string tmp;
+			size_t openingBracePos = line.find("{");
+			if (openingBracePos != std::string::npos) {
+				tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
+				std::istringstream issTmp(tmp);
+				issTmp >> std::ws;
+				std::getline(issTmp, tmp2, ' ');
+				line.erase(0, openingBracePos + 1);
+			} else {
+				while (std::getline(configFile, line)) {
+					size_t openingBracePos = line.find("{");
+					if (openingBracePos != std::string::npos) {
+						tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
+						std::istringstream issTmp(tmp);
+						issTmp >> std::ws;
+						std::getline(issTmp, tmp2, ' ');
+						line.erase(0, openingBracePos + 1);
+						break;
+					}
+				}
+			}
+		}

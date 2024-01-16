@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/13 11:37:48 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 18:42:35 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/16 17:33:28 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,29 @@ class Config
 
 		void formatString(std::string& str);
 		void formatKeyTmp(std::string& str, std::string& str2);
+		void formatValueTmp(std::ifstream& configFile, std::string& line, std::string& tmp2);// {
+		// 	std::string tmp;
+		// 	size_t openingBracePos = line.find("{");
+		// 	if (openingBracePos != std::string::npos) {
+		// 		tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
+		// 		std::istringstream issTmp(tmp);
+		// 		issTmp >> std::ws;
+		// 		std::getline(issTmp, tmp2, ' ');
+		// 		line.erase(0, openingBracePos + 1);
+		// 	} else {
+		// 		while (std::getline(configFile, line)) {
+		// 			size_t openingBracePos = line.find("{");
+		// 			if (openingBracePos != std::string::npos) {
+		// 				tmp = line.substr(line.find("location") + 8, openingBracePos - line.find("location") - 8);
+		// 				std::istringstream issTmp(tmp);
+		// 				issTmp >> std::ws;
+		// 				std::getline(issTmp, tmp2, ' ');
+		// 				line.erase(0, openingBracePos + 1);
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 	public:
 		Config();
