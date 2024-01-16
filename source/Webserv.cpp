@@ -6,7 +6,7 @@
 /*   By: sung-hle <sung-hle@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/20 08:53:31 by fhassoun          #+#    #+#             */
-/*   Updated: 2024/01/12 18:20:27 by sung-hle         ###   ########.fr       */
+/*   Updated: 2024/01/16 17:51:12 by sung-hle         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,10 @@ Webserv::Webserv()
 
 Webserv::~Webserv()
 {
-    // if (http_request)
-    //     delete http_request;
-    // if (http_response)
-    //     delete http_response;
+    if (http_request)
+        delete http_request;
+    if (http_response)
+        delete http_response;
 }
 
 Webserv::Webserv(Webserv const &src)
